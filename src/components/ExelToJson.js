@@ -4,6 +4,9 @@ import * as XLSX from "xlsx";
 import Table from "./Table";
 import { Box, Button, Grid, IconButton } from "@material-ui/core";
 import CloudDownloadTwoToneIcon from "@material-ui/icons/CloudDownloadTwoTone";
+import groupBy from "lodash.groupby";
+import uniq from "lodash.uniq";
+import difference from "lodash.difference";
 
 class ExcelToJson extends React.Component {
   constructor(props) {
@@ -100,7 +103,7 @@ class ExcelToJson extends React.Component {
 
     var headers = lines[0].split(",");
 
-    for (var i = 1; i < lines.length; i++) {
+    for (var i = 1; i < lines.length - 1; i++) {
       var obj = {};
       var currentline = lines[i].split(",");
 
@@ -126,7 +129,7 @@ class ExcelToJson extends React.Component {
 
     var headers = lines[0].split(",");
 
-    for (var i = 1; i < lines.length; i++) {
+    for (var i = 1; i < lines.length - 1; i++) {
       var obj = {};
       var currentline = lines[i].split(",");
 
@@ -144,16 +147,62 @@ class ExcelToJson extends React.Component {
     // return JSON.stringify(result); //JSON
   }
   compare = () => {
-    let arrOfData = [];
-    this.state.fileOne.map((el, i) => {
-      if (JSON.stringify(el) !== JSON.stringify(this.state.fileTwo[i])) {
-        arrOfData.push(el);
-        arrOfData.push(this.state.fileTwo[i]);
+    var result = groupBy(this.state.fileOne, "Device Name");
+    var result1 = groupBy(this.state.fileTwo, "Device Name");
+    //File one
+    var arrEl = [];
+    Object.values(result).forEach((arr) => {
+      let value = [];
+      let name;
+      arr.map((el) => {
+        value = [...value, el["Application Name"]];
+        name = el["Device Name"];
+      });
+      arrEl = [...arrEl, { name: name, value: value }];
+    });
+    console.log(arrEl);
+    //File two
+    var arrEl1 = [];
+    Object.values(result1).forEach((arr1) => {
+      let value1 = [];
+      let name1;
+      arr1.map((el1) => {
+        value1 = [...value1, el1["Application Name"]];
+        name1 = el1["Device Name"];
+      });
+      arrEl1 = [...arrEl1, { name: name1, value: value1 }];
+    });
+    console.log(arrEl1);
+    let devicesNames = [];
+    arrEl.map((elem) => (devicesNames = [...devicesNames, elem.name]));
+    arrEl1.map((elem1) => (devicesNames = [...devicesNames, elem1.name]));
+    const uniqueNames = uniq(devicesNames);
+    const file1ByName = groupBy(arrEl, "name");
+    const file2ByName = groupBy(arrEl1, "name");
+    let diffValues = [];
+    uniqueNames.map((name) => {
+      if (
+        file1ByName.hasOwnProperty(name) &&
+        file2ByName.hasOwnProperty(name)
+      ) {
+        let unique1 = file1ByName[name][0].value.filter(
+          (o) => file2ByName[name][0].value.indexOf(o) === -1
+        );
+        let unique2 = file2ByName[name][0].value.filter(
+          (o) => file1ByName[name][0].value.indexOf(o) === -1
+        );
+
+        const unique = unique1.concat(unique2);
+        diffValues = [...diffValues, { name: name, value: unique }];
       }
     });
-    this.setState({
-      tableData: [...this.state.tableData, ...arrOfData],
+    const notFinal = diffValues.filter((diffVl) => diffVl.value.length > 0);
+    let data = [];
+    notFinal.map((dt) => {
+      dt.value.map((vl) => (data = [...data, { 'Device Name': dt.name, 'Application Name': vl }]));
     });
+    console.log(data);
+    this.setState({ data: data });
   };
 
   render() {
@@ -225,7 +274,7 @@ class ExcelToJson extends React.Component {
               variant="contained"
               color="primary"
               disabled={
-                !this.state.fileOne.length && !this.state.fileTwo.length
+                !this.state.fileOne.length || !this.state.fileTwo.length
               }
               onClick={() => {
                 this.compare();
