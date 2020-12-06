@@ -6,6 +6,7 @@ import { Box, Button, Grid, IconButton } from "@material-ui/core";
 import CloudDownloadTwoToneIcon from "@material-ui/icons/CloudDownloadTwoTone";
 import groupBy from "lodash.groupby";
 import uniq from "lodash.uniq";
+import sortBy from "lodash.sortby";
 import difference from "lodash.difference";
 
 class ExcelToJson extends React.Component {
@@ -19,13 +20,14 @@ class ExcelToJson extends React.Component {
       fileTwo: [],
       tableData: [],
       data: [],
+      addedOrRemoved: [],
     };
   }
 
   componentDidUpdate(prevProps, prevState) {
-    console.log("here");
+    // console.log("here");
     if (prevState.tableData !== this.state.tableData) {
-      console.log("also here");
+      // console.log("also here");
       this.setState({
         data: [...this.state.tableData],
       });
@@ -146,63 +148,142 @@ class ExcelToJson extends React.Component {
     // console.log(result);
     // return JSON.stringify(result); //JSON
   }
+
   compare = () => {
-    var result = groupBy(this.state.fileOne, "Device Name");
-    var result1 = groupBy(this.state.fileTwo, "Device Name");
+    var groupByFirstFile = groupBy(this.state.fileOne, "Device Name");
+    var groupBySecondFile = groupBy(this.state.fileTwo, "Device Name");
+
     //File one
-    var arrEl = [];
-    Object.values(result).forEach((arr) => {
+    var arrOfElementsFistFile = [];
+    Object.values(groupByFirstFile).forEach((arrFirst) => {
       let value = [];
       let name;
-      arr.map((el) => {
+      let rest;
+      arrFirst.map((el) => {
         value = [...value, el["Application Name"]];
         name = el["Device Name"];
+        rest = el;
       });
-      arrEl = [...arrEl, { name: name, value: value }];
+      arrOfElementsFistFile = [
+        ...arrOfElementsFistFile,
+        { name: name, value: value, ...rest },
+      ];
     });
-    console.log(arrEl);
+    // console.log(arrOfElementsFistFile);
+
     //File two
-    var arrEl1 = [];
-    Object.values(result1).forEach((arr1) => {
-      let value1 = [];
-      let name1;
-      arr1.map((el1) => {
-        value1 = [...value1, el1["Application Name"]];
-        name1 = el1["Device Name"];
+    var arrOfElementsSecondFile = [];
+    Object.values(groupBySecondFile).forEach((arrSecond) => {
+      let value = [];
+      let name;
+      let rest;
+      arrSecond.map((el) => {
+        value = [...value, el["Application Name"]];
+        name = el["Device Name"];
+        rest = el;
       });
-      arrEl1 = [...arrEl1, { name: name1, value: value1 }];
+      arrOfElementsSecondFile = [
+        ...arrOfElementsSecondFile,
+        { name: name, value: value, ...rest },
+      ];
     });
-    console.log(arrEl1);
+    // console.log(arrOfElementsSecondFile);
+
+    // Get all device names
     let devicesNames = [];
-    arrEl.map((elem) => (devicesNames = [...devicesNames, elem.name]));
-    arrEl1.map((elem1) => (devicesNames = [...devicesNames, elem1.name]));
+    arrOfElementsFistFile.map(
+      (elem) => (devicesNames = [...devicesNames, elem.name])
+    );
+    arrOfElementsSecondFile.map(
+      (elem1) => (devicesNames = [...devicesNames, elem1.name])
+    );
+
+    // Unique device names
     const uniqueNames = uniq(devicesNames);
-    const file1ByName = groupBy(arrEl, "name");
-    const file2ByName = groupBy(arrEl1, "name");
+
+    // Group by name to find the differences of names on each file
+    const groupByNameFirst = groupBy(arrOfElementsFistFile, "name");
+    const groupByNameSecond = groupBy(arrOfElementsSecondFile, "name");
+    // Save here if it has chnaged
     let diffValues = [];
+    let arrOfElWithAllValues = [];
+    let addedOrRemoved = [];
+    let allEl1 = [];
+    let allEl2 = [];
+    let allEl = this.state.fileOne.concat(this.state.fileTwo);
+    // Save here if is removed or added
+    // let otherValues = [];
     uniqueNames.map((name) => {
       if (
-        file1ByName.hasOwnProperty(name) &&
-        file2ByName.hasOwnProperty(name)
+        groupByNameFirst.hasOwnProperty(name) &&
+        groupByNameSecond.hasOwnProperty(name)
       ) {
-        let unique1 = file1ByName[name][0].value.filter(
-          (o) => file2ByName[name][0].value.indexOf(o) === -1
-        );
-        let unique2 = file2ByName[name][0].value.filter(
-          (o) => file1ByName[name][0].value.indexOf(o) === -1
+        let unique1 = groupByNameFirst[name][0].value.filter(
+          (o) => groupByNameSecond[name][0].value.indexOf(o) === -1
         );
 
-        const unique = unique1.concat(unique2);
-        diffValues = [...diffValues, { name: name, value: unique }];
+        unique1.map((unq1) => {
+          const filtered1 = allEl.filter(
+            (all1) =>
+              all1["Device Name"] === name && all1["Application Name"] === unq1
+          );
+          allEl1 = [...allEl1, { ...filtered1[0], added: false }];
+        });
+        // console.log(allEl1);
+
+        // arrOfEl1 = arrOfEl1.push(groupByNameFirst[unique1]);
+
+        let unique2 = groupByNameSecond[name][0].value.filter(
+          (o) => groupByNameFirst[name][0].value.indexOf(o) === -1
+        );
+        unique2.map((unq2) => {
+          const filtered2 = allEl.filter(
+            (all2) =>
+              all2["Device Name"] === name && all2["Application Name"] === unq2
+          );
+          allEl2 = [...allEl2, { ...filtered2[0], added: true }];
+        });
+        // arrOfEl2 = arrOfEl2.push(groupByNameFirst[unique2])
+        arrOfElWithAllValues = [...allEl1, ...allEl2];
+
+        // const unique = unique1.concat(unique2);
+
+        // diffValues = [...diffValues, { name: name, value: unique }];
+        // console.log(diffValues)
+      } else if (
+        groupByNameFirst.hasOwnProperty(name) &&
+        !groupByNameSecond.hasOwnProperty(name)
+      ) {
+        console.log("removed", name);
+        const removed = allEl.filter((all3) => all3["Device Name"] === name);
+        addedOrRemoved = [...addedOrRemoved, { ...removed[0], added: false }];
+      } else if (
+        !groupByNameFirst.hasOwnProperty(name) &&
+        groupByNameSecond.hasOwnProperty(name)
+      ) {
+        console.log("added", name);
+        const added = allEl.filter((all4) => all4["Device Name"] === name);
+        addedOrRemoved = [...addedOrRemoved, { ...added[0], added: true }];
       }
     });
-    const notFinal = diffValues.filter((diffVl) => diffVl.value.length > 0);
-    let data = [];
-    notFinal.map((dt) => {
-      dt.value.map((vl) => (data = [...data, { 'Device Name': dt.name, 'Application Name': vl }]));
-    });
-    console.log(data);
-    this.setState({ data: data });
+    console.log(addedOrRemoved);
+
+    console.log(sortBy(arrOfElWithAllValues, "Device Name"));
+    this.setState({ data: sortBy(arrOfElWithAllValues, "Device Name") });
+    this.setState({ addedOrRemoved: addedOrRemoved });
+
+    // const notFinal = diffValues.filter((diffVl) => diffVl.value.length > 0);
+    // let data = [];
+    // notFinal.map((dt) => {
+    //   dt.value.map(
+    //     (vl) =>
+    //       (data = [...data, { "Device Name": dt.name, "Application Name": vl }])
+    //   );
+    // });
+
+    // console.log(data);
+    // Set data for the table
+    // this.setState({ data: data });
   };
 
   render() {
@@ -286,6 +367,14 @@ class ExcelToJson extends React.Component {
           <Grid item xs={12}>
             <Table data={this.state.data} />
           </Grid>
+          {this.state.addedOrRemoved.length > 0 ? (
+            <>
+              <h5>Added or removed completely</h5>
+              <Grid item xs={12}>
+                <Table data={this.state.addedOrRemoved} />
+              </Grid>
+            </>
+          ) : null}
         </Grid>
       </Box>
     );

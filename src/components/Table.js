@@ -12,7 +12,7 @@ import Paper from "@material-ui/core/Paper";
 const useStyles = makeStyles({
   table: {
     minWidth: 650,
-    margin:"30px 0"
+    margin: "30px 0",
   },
 });
 
@@ -22,32 +22,45 @@ const Table = (props) => {
 
   React.useEffect(() => {
     setData(props.data);
-    console.log(props.data);
+    // console.log(props.data);
   }, [props.data]);
 
-  console.log(props.data);
+  // console.log(props.data);
 
   return (
     <TableContainer component={Paper}>
       {data.length > 0 ? (
         <TableMaterial className={classes.table} aria-label="simple table">
           <TableHead>
-            <TableRow>
-              {data.length > 0 &&
-                Object.keys(data[0]).map((el, i) => (
-                  <TableCell key={i}>{el}</TableCell>
-                ))}
-            </TableRow>
+            {data.length > 0 ? (
+              <TableRow>
+                {data.length > 0
+                  ? Object.keys(data[0]).map((el, i) => (
+                      <TableCell key={i}>{el}</TableCell>
+                    ))
+                  : null}
+              </TableRow>
+            ) : null}
           </TableHead>
           <TableBody>
-            {data &&
-              data.map((obj, i) => (
-                <TableRow key={i}>
-                  {Object.values(obj).map((el, i) => (
-                    <TableCell key={el}>{el}</TableCell>
-                  ))}
-                </TableRow>
-              ))}
+            {data
+              ? data.map((obj, i) =>
+                  obj ? (
+                    <TableRow
+                      key={i}
+                      style={{
+                        backgroundColor: obj.added
+                          ? "#bcdebc"
+                          : "rgb(224 160 160 / 68%)",
+                      }}
+                    >
+                      {Object.values(obj).map((el, i) => (
+                        <TableCell key={i + el}>{el}</TableCell>
+                      ))}
+                    </TableRow>
+                  ) : null
+                )
+              : null}
           </TableBody>
         </TableMaterial>
       ) : (

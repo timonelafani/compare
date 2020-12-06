@@ -10,6 +10,7 @@
     "@testing-library/user-event": "^12.1.10",
     "lodash.difference": "^4.5.0",
     "lodash.groupby": "^4.6.0",
+    "lodash.sortby": "^4.7.0",
     "lodash.uniq": "^4.5.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
