@@ -227,12 +227,8 @@ class ExcelToJson extends React.Component {
             (all1) =>
               all1["Device Name"] === name && all1["Application Name"] === unq1
           );
-          allEl1 = [...allEl1, { ...filtered1[0], added: false }];
+          allEl1 = [...allEl1, { ...filtered1[0], Action: "Removed" }];
         });
-        // console.log(allEl1);
-
-        // arrOfEl1 = arrOfEl1.push(groupByNameFirst[unique1]);
-
         let unique2 = groupByNameSecond[name][0].value.filter(
           (o) => groupByNameFirst[name][0].value.indexOf(o) === -1
         );
@@ -241,29 +237,25 @@ class ExcelToJson extends React.Component {
             (all2) =>
               all2["Device Name"] === name && all2["Application Name"] === unq2
           );
-          allEl2 = [...allEl2, { ...filtered2[0], added: true }];
+          allEl2 = [...allEl2, { ...filtered2[0], Action: "Added" }];
         });
-        // arrOfEl2 = arrOfEl2.push(groupByNameFirst[unique2])
         arrOfElWithAllValues = [...allEl1, ...allEl2];
-
-        // const unique = unique1.concat(unique2);
-
-        // diffValues = [...diffValues, { name: name, value: unique }];
-        // console.log(diffValues)
       } else if (
         groupByNameFirst.hasOwnProperty(name) &&
         !groupByNameSecond.hasOwnProperty(name)
       ) {
         console.log("removed", name);
         const removed = allEl.filter((all3) => all3["Device Name"] === name);
-        addedOrRemoved = [...addedOrRemoved, { ...removed[0], added: false }];
+        addedOrRemoved = [
+          ...addedOrRemoved,
+          { ...removed[0], Action: "Removed" },
+        ];
       } else if (
         !groupByNameFirst.hasOwnProperty(name) &&
         groupByNameSecond.hasOwnProperty(name)
       ) {
-        console.log("added", name);
-        const added = allEl.filter((all4) => all4["Device Name"] === name);
-        addedOrRemoved = [...addedOrRemoved, { ...added[0], added: true }];
+        const action = allEl.filter((all4) => all4["Device Name"] === name);
+        addedOrRemoved = [...addedOrRemoved, { ...action[0], Action: "Added" }];
       }
     });
     console.log(addedOrRemoved);
@@ -271,19 +263,6 @@ class ExcelToJson extends React.Component {
     console.log(sortBy(arrOfElWithAllValues, "Device Name"));
     this.setState({ data: sortBy(arrOfElWithAllValues, "Device Name") });
     this.setState({ addedOrRemoved: addedOrRemoved });
-
-    // const notFinal = diffValues.filter((diffVl) => diffVl.value.length > 0);
-    // let data = [];
-    // notFinal.map((dt) => {
-    //   dt.value.map(
-    //     (vl) =>
-    //       (data = [...data, { "Device Name": dt.name, "Application Name": vl }])
-    //   );
-    // });
-
-    // console.log(data);
-    // Set data for the table
-    // this.setState({ data: data });
   };
 
   render() {

@@ -49,9 +49,10 @@ const Table = (props) => {
                     <TableRow
                       key={i}
                       style={{
-                        backgroundColor: obj.added
-                          ? "#bcdebc"
-                          : "rgb(224 160 160 / 68%)",
+                        backgroundColor:
+                          obj.Action === "Added"
+                            ? "#bcdebc"
+                            : "rgb(224 160 160 / 68%)",
                       }}
                     >
                       {Object.values(obj).map((el, i) => (
